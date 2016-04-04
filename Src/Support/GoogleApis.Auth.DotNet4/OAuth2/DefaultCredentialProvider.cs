@@ -42,6 +42,8 @@ namespace Google.Apis.Auth.OAuth2
         /// </summary>
         public const string CredentialEnvironmentVariable = "GOOGLE_APPLICATION_CREDENTIALS";
 
+        public const string TokenSerivceUrlVariable = "GOOGLE_TOKEN_SERVICE_URL";
+
         /// <summary>Well known file which stores the default application credentials.</summary>
         private const string WellKnownCredentialsFile = "application_default_credentials.json";
 
@@ -55,7 +57,7 @@ namespace Google.Apis.Auth.OAuth2
         private const string CloudSDKConfigDirectoryWindows = "gcloud";
 
         /// <summary>Help link to the application default credentials feature.</summary>
-        private const string HelpPermalink = 
+        private const string HelpPermalink =
             "https://developers.google.com/accounts/docs/application-default-credentials";
 
         /// <summary>GCloud configuration directory on Linux/Mac, relative to $HOME.</summary>
@@ -63,6 +65,8 @@ namespace Google.Apis.Auth.OAuth2
 
         /// <summary>Caches result from first call to <c>GetApplicationDefaultCredentialAsync</c> </summary>
         private readonly Lazy<Task<GoogleCredential>> cachedCredentialTask;
+
+        private readonly Lazy<string> cachedTokenServiceUrl = new Lazy<string>(GetTokenServiceUrl);
 
         /// <summary>Constructs a new default credential provider.</summary>
         public DefaultCredentialProvider()
@@ -103,7 +107,7 @@ namespace Google.Apis.Auth.OAuth2
                             CredentialEnvironmentVariable));
                 }
             }
-            
+
             // 2. Then try the well known file.
             credentialPath = GetWellKnownCredentialFilePath();
             if (!String.IsNullOrWhiteSpace(credentialPath))
@@ -134,10 +138,10 @@ namespace Google.Apis.Auth.OAuth2
 
             // 3. Then try the compute engine.     
             Logger.Debug("Checking whether the application is running on ComputeEngine.");
-            if (await ComputeCredential.IsRunningOnComputeEngine().ConfigureAwait(false))
+            if (await ShouldUseComputeCredentialsAsync())
             {
                 Logger.Debug("ComputeEngine check passed. Using ComputeEngine Credentials.");
-                return new GoogleCredential(new ComputeCredential());
+                return new GoogleCredential(new ComputeCredential(new ComputeCredential.Initializer(cachedTokenServiceUrl.Value)));
             }
 
             // If everything we tried has failed, throw an exception.
@@ -186,10 +190,10 @@ namespace Google.Apis.Auth.OAuth2
                 case JsonCredentialParameters.ServiceAccountCredentialType:
                     return GoogleCredential.FromCredential(
                         CreateServiceAccountCredentialFromJson(credentialParameters));
-                
+
                 default:
                     throw new InvalidOperationException(
-                        String.Format("Error creating credential from JSON. Unrecognized credential type {0}.", 
+                        String.Format("Error creating credential from JSON. Unrecognized credential type {0}.",
                             credentialParameters.Type));
             }
         }
@@ -242,7 +246,8 @@ namespace Google.Apis.Auth.OAuth2
         private string GetWellKnownCredentialFilePath()
         {
             var appData = GetEnvironmentVariable(AppdataEnvironmentVariable);
-            if (appData != null) {
+            if (appData != null)
+            {
                 return Path.Combine(appData, CloudSDKConfigDirectoryWindows, WellKnownCredentialsFile);
             }
             var unixHome = GetEnvironmentVariable(HomeEnvironmentVariable);
@@ -269,6 +274,22 @@ namespace Google.Apis.Auth.OAuth2
         protected virtual Stream GetStream(string filePath)
         {
             return new FileStream(filePath, FileMode.Open, FileAccess.Read);
+        }
+
+        /// <summary>
+        /// Returns the token service URL to use.
+        /// </summary>
+        /// <returns></returns>
+        private static string GetTokenServiceUrl()
+        {
+            var tokenUrlOverride = Environment.GetEnvironmentVariable(TokenSerivceUrlVariable);
+            return tokenUrlOverride ?? GoogleAuthConsts.TokenUrl;
+        }
+
+        private static async Task<bool> ShouldUseComputeCredentialsAsync()
+        {
+            var isRunningUnderGce = await ComputeCredential.IsRunningOnComputeEngine().ConfigureAwait(false);
+            return isRunningUnderGce || Environment.GetEnvironmentVariable(TokenSerivceUrlVariable) != null;
         }
     }
 }
