@@ -66,8 +66,6 @@ namespace Google.Apis.Auth.OAuth2
         /// <summary>Caches result from first call to <c>GetApplicationDefaultCredentialAsync</c> </summary>
         private readonly Lazy<Task<GoogleCredential>> cachedCredentialTask;
 
-        private readonly Lazy<string> cachedTokenServiceUrl = new Lazy<string>(GetTokenServiceOverrideUrl);
-
         /// <summary>Constructs a new default credential provider.</summary>
         public DefaultCredentialProvider()
         {
@@ -136,11 +134,13 @@ namespace Google.Apis.Auth.OAuth2
                 }
             }
 
-            // 3. Then try to see the metadata server override.
+            // 3. Then try to see the token service server override.
+            Logger.Debug("Checking whether there's an override for the token service token url.");
             string tokenUrlOverride = GetTokenServiceOverrideUrl();
             if (!String.IsNullOrEmpty(tokenUrlOverride))
             {
-                return new GoogleCredential(new ComputeCredential(new ComputeCredential.Initializer(cachedTokenServiceUrl.Value)));
+                Logger.Debug("Using override for token service token url.");
+                return new GoogleCredential(new ComputeCredential(new ComputeCredential.Initializer(tokenUrlOverride)));
             }
 
             // 4. Then try the compute engine.
