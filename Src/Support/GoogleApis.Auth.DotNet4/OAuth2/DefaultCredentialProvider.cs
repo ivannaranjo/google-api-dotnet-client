@@ -42,7 +42,7 @@ namespace Google.Apis.Auth.OAuth2
         /// </summary>
         public const string CredentialEnvironmentVariable = "GOOGLE_APPLICATION_CREDENTIALS";
 
-        public const string TokenSerivceUrlVariable = "GOOGLE_TOKEN_SERVICE_URL";
+        public const string TokenSerivceUrlOverrideVariable = "GOOGLE_TOKEN_SERVICE_URL";
 
         /// <summary>Well known file which stores the default application credentials.</summary>
         private const string WellKnownCredentialsFile = "application_default_credentials.json";
@@ -66,7 +66,7 @@ namespace Google.Apis.Auth.OAuth2
         /// <summary>Caches result from first call to <c>GetApplicationDefaultCredentialAsync</c> </summary>
         private readonly Lazy<Task<GoogleCredential>> cachedCredentialTask;
 
-        private readonly Lazy<string> cachedTokenServiceUrl = new Lazy<string>(GetTokenServiceUrl);
+        private readonly Lazy<string> cachedTokenServiceUrl = new Lazy<string>(GetTokenServiceOverrideUrl);
 
         /// <summary>Constructs a new default credential provider.</summary>
         public DefaultCredentialProvider()
@@ -136,12 +136,19 @@ namespace Google.Apis.Auth.OAuth2
                 }
             }
 
-            // 3. Then try the compute engine.     
+            // 3. Then try to see the metadata server override.
+            string tokenUrlOverride = GetTokenServiceOverrideUrl();
+            if (!String.IsNullOrEmpty(tokenUrlOverride))
+            {
+                return new GoogleCredential(new ComputeCredential(new ComputeCredential.Initializer(cachedTokenServiceUrl.Value)));
+            }
+
+            // 4. Then try the compute engine.
             Logger.Debug("Checking whether the application is running on ComputeEngine.");
-            if (await ShouldUseComputeCredentialsAsync())
+            if (await ComputeCredential.IsRunningOnComputeEngine())
             {
                 Logger.Debug("ComputeEngine check passed. Using ComputeEngine Credentials.");
-                return new GoogleCredential(new ComputeCredential(new ComputeCredential.Initializer(cachedTokenServiceUrl.Value)));
+                return new GoogleCredential(new ComputeCredential());
             }
 
             // If everything we tried has failed, throw an exception.
@@ -280,16 +287,9 @@ namespace Google.Apis.Auth.OAuth2
         /// Returns the token service URL to use.
         /// </summary>
         /// <returns></returns>
-        private static string GetTokenServiceUrl()
+        private static string GetTokenServiceOverrideUrl()
         {
-            var tokenUrlOverride = Environment.GetEnvironmentVariable(TokenSerivceUrlVariable);
-            return tokenUrlOverride ?? GoogleAuthConsts.TokenUrl;
-        }
-
-        private static async Task<bool> ShouldUseComputeCredentialsAsync()
-        {
-            var isRunningUnderGce = await ComputeCredential.IsRunningOnComputeEngine().ConfigureAwait(false);
-            return isRunningUnderGce || Environment.GetEnvironmentVariable(TokenSerivceUrlVariable) != null;
+            return Environment.GetEnvironmentVariable(TokenSerivceUrlOverrideVariable);
         }
     }
 }
