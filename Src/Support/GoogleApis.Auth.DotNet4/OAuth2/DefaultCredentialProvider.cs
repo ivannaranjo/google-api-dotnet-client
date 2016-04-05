@@ -145,7 +145,7 @@ namespace Google.Apis.Auth.OAuth2
 
             // 4. Then try the compute engine.
             Logger.Debug("Checking whether the application is running on ComputeEngine.");
-            if (await ComputeCredential.IsRunningOnComputeEngine())
+            if (await ComputeCredential.IsRunningOnComputeEngine().ConfigureAwait(false))
             {
                 Logger.Debug("ComputeEngine check passed. Using ComputeEngine Credentials.");
                 return new GoogleCredential(new ComputeCredential());
@@ -253,8 +253,7 @@ namespace Google.Apis.Auth.OAuth2
         private string GetWellKnownCredentialFilePath()
         {
             var appData = GetEnvironmentVariable(AppdataEnvironmentVariable);
-            if (appData != null)
-            {
+            if (appData != null) {
                 return Path.Combine(appData, CloudSDKConfigDirectoryWindows, WellKnownCredentialsFile);
             }
             var unixHome = GetEnvironmentVariable(HomeEnvironmentVariable);
