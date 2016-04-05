@@ -200,7 +200,7 @@ namespace Google.Apis.Auth.OAuth2
 
                 default:
                     throw new InvalidOperationException(
-                        String.Format("Error creating credential from JSON. Unrecognized credential type {0}.",
+                        String.Format("Error creating credential from JSON. Unrecognized credential type {0}.", 
                             credentialParameters.Type));
             }
         }
