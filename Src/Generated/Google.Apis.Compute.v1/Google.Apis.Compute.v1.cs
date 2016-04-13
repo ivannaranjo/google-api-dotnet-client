@@ -26,7 +26,7 @@
  *      <tr><th>API
  *          <td><a href='https://developers.google.com/compute/docs/reference/latest/'>Compute Engine API</a>
  *      <tr><th>API Version<td>v1
- *      <tr><th>API Rev<td>20160317 (441)
+ *      <tr><th>API Rev<td>20160407 (462)
  *      <tr><th>API Docs
  *          <td><a href='https://developers.google.com/compute/docs/reference/latest/'>
  *              https://developers.google.com/compute/docs/reference/latest/</a>
@@ -20851,18 +20851,26 @@ namespace Google.Apis.Compute.v1.Data
         [Newtonsoft.Json.JsonPropertyAttribute("diskType")]
         public virtual string DiskType { get; set; } 
 
-        /// <summary>The source image used to create this disk.
+        /// <summary>The source image used to create this disk. If the source image is deleted, this field will not be
+        /// set.
         ///
-        /// To create a disk with a private image, specify the image name in the following format:
+        /// To create a disk with one of the public operating system images, specify the image by its family name. For
+        /// example, specify family/debian-8 to use the latest Debian 8 image:
         ///
-        /// global/images/my-private-image
+        /// projects/debian-cloud/global/images/family/debian-8
         ///
-        /// To create a disk with a public image, specify the image name and the project that owns the image. For
-        /// example, you can use a Debian image from the debian-cloud project:
+        /// Alternatively, use a specific version of a public operating system image:
         ///
         /// projects/debian-cloud/global/images/debian-8-jessie-vYYYYMMDD
         ///
-        /// The vYYYYMMDD value is the image version. The fully-qualified URL also works in both examples.</summary>
+        /// To create a disk with a private image that you created, specify the image name in the following format:
+        ///
+        /// global/images/my-private-image
+        ///
+        /// You can also specify a private image by its image family, which returns the latest version of the image in
+        /// that family. Replace the image name with family/family-name:
+        ///
+        /// global/images/family/my-private-family</summary>
         [Newtonsoft.Json.JsonPropertyAttribute("sourceImage")]
         public virtual string SourceImage { get; set; } 
 
@@ -21255,6 +21263,11 @@ namespace Google.Apis.Compute.v1.Data
         /// Possible values are HTTP, HTTPS, HTTP2, TCP and SSL.</summary>
         [Newtonsoft.Json.JsonPropertyAttribute("protocol")]
         public virtual string Protocol { get; set; } 
+
+        /// <summary>[Output Only] URL of the region where the regional backend service resides. This field is not
+        /// applicable to global backend services.</summary>
+        [Newtonsoft.Json.JsonPropertyAttribute("region")]
+        public virtual string Region { get; set; } 
 
         /// <summary>[Output Only] Server-defined URL for the resource.</summary>
         [Newtonsoft.Json.JsonPropertyAttribute("selfLink")]
@@ -24897,7 +24910,7 @@ namespace Google.Apis.Compute.v1.Data
         [Newtonsoft.Json.JsonPropertyAttribute("network")]
         public virtual string Network { get; set; } 
 
-        /// <summary>[Output Only] URL of the region where the Subnetwork resides.</summary>
+        /// <summary>URL of the region where the Subnetwork resides.</summary>
         [Newtonsoft.Json.JsonPropertyAttribute("region")]
         public virtual string Region { get; set; } 
 
