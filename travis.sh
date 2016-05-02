@@ -4,8 +4,8 @@
 set -e
 
 # grab nunit runners
-nuget install NUnit.Runners -Version 2.6.4 -OutputDirectory testrunner
-NUNIT="${PWD}/testrunner/NUnit.Runners.2.6.4/tools/nunit-console.exe"
+nuget install NUnit.ConsoleRunner -Version 3.2.1 -OutputDirectory testrunner
+NUNIT="${PWD}/testrunner/NUnit.ConsoleRunner.3.2.1/tools/nunit3-console.exe"
 
 cd Src/Support
 
@@ -16,6 +16,6 @@ xbuild /p:Configuration=ReleaseTravis GoogleApisClient.sln
 OUTDIR=bin/ReleaseSigned
 
 mono "${NUNIT}" \
-    "GoogleApis.Tests/${OUTDIR}/Google.Apis.Tests.dll" \
-    "GoogleApis.Auth.Tests/${OUTDIR}/Google.Apis.Auth.Tests.dll" \
-    "GoogleApis.Auth.DotNet4.Tests/${OUTDIR}/Google.Apis.Auth.DotNet4.Tests.dll"
+    "GoogleApis.Tests/${OUTDIR}/Google.Apis.Tests.exe" \
+    "GoogleApis.Auth.Tests/${OUTDIR}/Google.Apis.Auth.Tests.exe" \
+    "GoogleApis.Auth.DotNet4.Tests/${OUTDIR}/Google.Apis.Auth.DotNet4.Tests.exe"
