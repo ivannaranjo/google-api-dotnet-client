@@ -42,6 +42,9 @@ namespace Google.Apis.Auth.OAuth2
         /// </summary>
         public const string CredentialEnvironmentVariable = "GOOGLE_APPLICATION_CREDENTIALS";
 
+        /// <summary>
+        /// Environment variable override which stores the URL to the service to get OAUTH tokens.
+        /// </summary>
         public const string TokenSerivceUrlOverrideVariable = "GOOGLE_TOKEN_SERVICE_URL";
 
         /// <summary>Well known file which stores the default application credentials.</summary>
