@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"jQLIOHBVnDZie4rQHGH1WJF-INE/dzG0_WkGfTRGUyB7GA3AUMahRvY\"",
+ "etag": "\"C5oy1hgQsABtYOYIOXWcR3BgYqU/esBlgEZbCNXqrd_p_tAJhSFnCOM\"",
  "discoveryVersion": "v1",
  "id": "sqladmin:v1beta4",
  "name": "sqladmin",
  "canonicalName": "SQL Admin",
  "version": "v1beta4",
- "revision": "20160418",
+ "revision": "20160630",
  "title": "Cloud SQL Administration API",
  "description": "Creates and configures Cloud SQL instances, which provide fully-managed MySQL databases.",
  "ownerDomain": "google.com",
@@ -348,7 +348,7 @@
       },
       "name": {
        "type": "string",
-       "description": "The name of the failover replica."
+       "description": "The name of the failover replica. If specified at instance creation, a failover replica is created for the instance. The name doesn't include the project ID. This property is applicable only to Second Generation instances."
       }
      }
     },
@@ -1063,7 +1063,7 @@
    "properties": {
     "activationPolicy": {
      "type": "string",
-     "description": "The activation policy for this instance. This specifies when the instance should be activated and is applicable only when the instance state is RUNNABLE. This can be one of the following.\nALWAYS: The instance should always be active.\nNEVER: The instance should never be activated.\nON_DEMAND: The instance is activated upon receiving requests; only applicable to First Generation instances."
+     "description": "The activation policy specifies when the instance is activated; it is applicable only when the instance state is RUNNABLE. The activation policy cannot be updated together with other settings for Second Generation instances. Valid values:\nALWAYS: The instance is on; it is not deactivated by inactivity.\nNEVER: The instance is off; it is not activated, even if a connection request arrives.\nON_DEMAND: The instance responds to incoming requests, and turns itself off when not in use. Instances with PER_USE pricing turn off after 15 minutes of inactivity. Instances with PER_PACKAGE pricing turn off after 12 hours of inactivity."
     },
     "authorizedGaeApplications": {
      "type": "array",
@@ -1082,12 +1082,12 @@
     },
     "dataDiskSizeGb": {
      "type": "string",
-     "description": "The size of data disk, in GB. The data disk size minimum is 10GB. This property is only applicable to Second Generation instances.",
+     "description": "The size of data disk, in GB. The data disk size minimum is 10GB. Applies only to Second Generation instances.",
      "format": "int64"
     },
     "dataDiskType": {
      "type": "string",
-     "description": "The type of data disk. Only supported for Second Generation instances. The default type is PD_SSD. This property is only applicable to Second Generation instances."
+     "description": "The type of data disk. Only supported for Second Generation instances. The default type is PD_SSD. Applies only to Second Generation instances."
     },
     "databaseFlags": {
      "type": "array",
@@ -1115,7 +1115,7 @@
     },
     "maintenanceWindow": {
      "$ref": "MaintenanceWindow",
-     "description": "The maintenance window for this instance. This specifies when the instance may be restarted for maintenance purposes. This property is only applicable to Second Generation instances."
+     "description": "The maintenance window for this instance. This specifies when the instance may be restarted for maintenance purposes. Applies only to Second Generation instances."
     },
     "pricingPlan": {
      "type": "string",
@@ -1134,6 +1134,10 @@
        "sql.instances.update"
       ]
      }
+    },
+    "storageAutoResize": {
+     "type": "boolean",
+     "description": "Configuration to increase storage size automatically. The default value is false. Applies only to Second Generation instances."
     },
     "tier": {
      "type": "string",
@@ -1237,12 +1241,16 @@
    "properties": {
     "clientCert": {
      "$ref": "SslCertDetail",
-     "description": "The new client certificate and private key. The new certificate will not work until the instance is restarted."
+     "description": "The new client certificate and private key. The new certificate will not work until the instance is restarted for First Generation instances."
     },
     "kind": {
      "type": "string",
      "description": "This is always sql#sslCertsInsert.",
      "default": "sql#sslCertsInsert"
+    },
+    "operation": {
+     "$ref": "Operation",
+     "description": "The operation to track the ssl certs insert request."
     },
     "serverCaCert": {
      "$ref": "SslCert",

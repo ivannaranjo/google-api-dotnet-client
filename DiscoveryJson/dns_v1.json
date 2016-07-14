@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"jQLIOHBVnDZie4rQHGH1WJF-INE/ctEt-71wWAltEdgLnIcGLfJZeFE\"",
+ "etag": "\"C5oy1hgQsABtYOYIOXWcR3BgYqU/OpGuh2wfy8zzV6BEWvoiTu2Ru1M\"",
  "discoveryVersion": "v1",
  "id": "dns:v1",
  "name": "dns",
  "version": "v1",
- "revision": "20160413",
+ "revision": "20160601",
  "title": "Google Cloud DNS API",
  "description": "Configures and serves authoritative DNS records.",
  "ownerDomain": "google.com",

@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"jQLIOHBVnDZie4rQHGH1WJF-INE/8DCWy2Mz0LaM0SohXNHBiLxhDn0\"",
+ "etag": "\"C5oy1hgQsABtYOYIOXWcR3BgYqU/3m-13B8ub9h95qz4KtmGUpxE3zQ\"",
  "discoveryVersion": "v1",
  "id": "compute:v1",
  "name": "compute",
  "version": "v1",
- "revision": "20160412",
+ "revision": "20160624",
  "title": "Compute Engine API",
  "description": "Creates and runs virtual machines on Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -94,7 +94,7 @@
   "AccessConfig": {
    "id": "AccessConfig",
    "type": "object",
-   "description": "An access configuration attached to an instance's network interface.",
+   "description": "An access configuration attached to an instance's network interface. Only one access config per instance is supported.",
    "properties": {
     "kind": {
      "type": "string",
@@ -345,6 +345,10 @@
      "type": "string",
      "description": "Specifies a unique device name of your choice that is reflected into the /dev/disk/by-id/google-* tree of a Linux operating system running within the instance. This name can be used to reference the device for mounting, resizing, and so on, from within the instance.\n\nIf not specified, the server chooses a default device name to apply to this disk, in the form persistent-disks-x, where x is a number assigned by Google Compute Engine. This field is only applicable for persistent disks."
     },
+    "diskEncryptionKey": {
+     "$ref": "CustomerEncryptionKey",
+     "description": "Encrypts or decrypts a disk using a customer-supplied encryption key.\n\nIf you are creating a new disk, this field encrypts the new disk using an encryption key that you provide. If you are attaching an existing disk that is already encrypted, this field decrypts the disk using the customer-supplied encryption key.\n\nIf you encrypt a disk using a customer-supplied key, you must provide the same key again when you attempt to use this resource at a later time. For example, you must provide the key when you create a snapshot or an image from the disk or when you attach the disk to a virtual machine instance.\n\nIf you do not provide an encryption key, then the disk will be encrypted using an automatically generated key and you do not need to provide a key to use the disk later.\n\nInstance templates do not store customer-supplied encryption keys, so you cannot use your own keys to encrypt disks in a managed instance group."
+    },
     "index": {
      "type": "integer",
      "description": "Assigns a zero-based index to this disk, where 0 is reserved for the boot disk. For example, if you have many disks attached to an instance, each disk would have a unique index number. If not specified, the server will choose an appropriate value.",
@@ -434,6 +438,10 @@
     "sourceImage": {
      "type": "string",
      "description": "The source image used to create this disk. If the source image is deleted, this field will not be set.\n\nTo create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:\n\nprojects/debian-cloud/global/images/family/debian-8 \n\nAlternatively, use a specific version of a public operating system image:\n\nprojects/debian-cloud/global/images/debian-8-jessie-vYYYYMMDD \n\nTo create a disk with a private image that you created, specify the image name in the following format:\n\nglobal/images/my-private-image \n\nYou can also specify a private image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:\n\nglobal/images/family/my-private-family"
+    },
+    "sourceImageEncryptionKey": {
+     "$ref": "CustomerEncryptionKey",
+     "description": "The customer-supplied encryption key of the source image. Required if the source image is protected by a customer-supplied encryption key.\n\nInstance templates do not store customer-supplied encryption keys, so you cannot create disks for instances in a managed instance group if the source images are encrypted with your own keys."
     }
    }
   },
@@ -726,7 +734,7 @@
    "properties": {
     "balancingMode": {
      "type": "string",
-     "description": "Specifies the balancing mode for this backend. For global HTTP(S) load balancing, the default is UTILIZATION. Valid values are UTILIZATION and RATE.",
+     "description": "Specifies the balancing mode for this backend. For global HTTP(S) load balancing, the default is UTILIZATION. Valid values are UTILIZATION and RATE.\n\nThis cannot be used for internal load balancing.",
      "enum": [
       "RATE",
       "UTILIZATION"
@@ -738,7 +746,7 @@
     },
     "capacityScaler": {
      "type": "number",
-     "description": "A multiplier applied to the group's maximum servicing capacity (either UTILIZATION or RATE). Default value is 1, which means the group will serve up to 100% of its configured CPU or RPS (depending on balancingMode). A setting of 0 means the group is completely drained, offering 0% of its available CPU or RPS. Valid range is [0.0,1.0].",
+     "description": "A multiplier applied to the group's maximum servicing capacity (either UTILIZATION or RATE). Default value is 1, which means the group will serve up to 100% of its configured CPU or RPS (depending on balancingMode). A setting of 0 means the group is completely drained, offering 0% of its available CPU or RPS. Valid range is [0.0,1.0].\n\nThis cannot be used for internal load balancing.",
      "format": "float"
     },
     "description": {
@@ -747,21 +755,21 @@
     },
     "group": {
      "type": "string",
-     "description": "The fully-qualified URL of a zonal Instance Group resource. This instance group defines the list of instances that serve traffic. Member virtual machine instances from each instance group must live in the same zone as the instance group itself. No two backends in a backend service are allowed to use same Instance Group resource.\n\nNote that you must specify an Instance Group resource using the fully-qualified URL, rather than a partial URL."
+     "description": "The fully-qualified URL of a zonal Instance Group resource. This instance group defines the list of instances that serve traffic. Member virtual machine instances from each instance group must live in the same zone as the instance group itself. No two backends in a backend service are allowed to use same Instance Group resource.\n\nNote that you must specify an Instance Group resource using the fully-qualified URL, rather than a partial URL.\n\nWhen the BackendService has load balancing scheme INTERNAL, the instance group must be in a zone within the same region as the BackendService."
     },
     "maxRate": {
      "type": "integer",
-     "description": "The max requests per second (RPS) of the group. Can be used with either RATE or UTILIZATION balancing modes, but required if RATE mode. For RATE mode, either maxRate or maxRatePerInstance must be set.",
+     "description": "The max requests per second (RPS) of the group. Can be used with either RATE or UTILIZATION balancing modes, but required if RATE mode. For RATE mode, either maxRate or maxRatePerInstance must be set.\n\nThis cannot be used for internal load balancing.",
      "format": "int32"
     },
     "maxRatePerInstance": {
      "type": "number",
-     "description": "The max requests per second (RPS) that a single backend instance can handle.This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.",
+     "description": "The max requests per second (RPS) that a single backend instance can handle.This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.\n\nThis cannot be used for internal load balancing.",
      "format": "float"
     },
     "maxUtilization": {
      "type": "number",
-     "description": "Used when balancingMode is UTILIZATION. This ratio defines the CPU utilization target for the group. The default is 0.8. Valid range is [0.0, 1.0].",
+     "description": "Used when balancingMode is UTILIZATION. This ratio defines the CPU utilization target for the group. The default is 0.8. Valid range is [0.0, 1.0].\n\nThis cannot be used for internal load balancing.",
      "format": "float"
     }
    }
@@ -786,6 +794,10 @@
      "type": "string",
      "description": "An optional description of this resource. Provide this property when you create the resource."
     },
+    "enableCDN": {
+     "type": "boolean",
+     "description": "If true, enable Cloud CDN for this BackendService.\n\nWhen the load balancing scheme is INTERNAL, this field is not used."
+    },
     "fingerprint": {
      "type": "string",
      "description": "Fingerprint of this resource. A hash of the contents stored in this object. This field is used in optimistic locking. This field will be ignored when inserting a BackendService. An up-to-date fingerprint must be provided in order to update the BackendService.",
@@ -793,7 +805,7 @@
     },
     "healthChecks": {
      "type": "array",
-     "description": "The list of URLs to the HttpHealthCheck or HttpsHealthCheck resource for health checking this BackendService. Currently at most one health check can be specified, and a health check is required.",
+     "description": "The list of URLs to the HttpHealthCheck or HttpsHealthCheck resource for health checking this BackendService. Currently at most one health check can be specified, and a health check is required.\n\nFor internal load balancing, a URL to a HealthCheck resource must be specified instead.",
      "items": {
       "type": "string"
      }
@@ -815,16 +827,16 @@
     },
     "port": {
      "type": "integer",
-     "description": "Deprecated in favor of portName. The TCP port to connect on the backend. The default value is 80.",
+     "description": "Deprecated in favor of portName. The TCP port to connect on the backend. The default value is 80.\n\nThis cannot be used for internal load balancing.",
      "format": "int32"
     },
     "portName": {
      "type": "string",
-     "description": "Name of backend port. The same name should appear in the instance groups referenced by this service. Required."
+     "description": "Name of backend port. The same name should appear in the instance groups referenced by this service. Required when the load balancing scheme is EXTERNAL.\n\nWhen the load balancing scheme is INTERNAL, this field is not used."
     },
     "protocol": {
      "type": "string",
-     "description": "The protocol this BackendService uses to communicate with backends.\n\nPossible values are HTTP, HTTPS, HTTP2, TCP and SSL.",
+     "description": "The protocol this BackendService uses to communicate with backends.\n\nPossible values are HTTP, HTTPS, HTTP2, TCP and SSL. The default is HTTP.\n\nFor internal load balancing, the possible values are TCP and UDP, and the default is TCP.",
      "enum": [
       "HTTP",
       "HTTPS"
@@ -873,7 +885,7 @@
    "properties": {
     "id": {
      "type": "string",
-     "description": "[Output Only] The unique identifier for the resource. This identifier is defined by the server."
+     "description": "[Output Only] Unique identifier for the resource; defined by the server."
     },
     "items": {
      "type": "array",
@@ -889,11 +901,49 @@
     },
     "nextPageToken": {
      "type": "string",
-     "description": "[Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results."
+     "description": "[Output Only] A token used to continue a truncated list request."
     },
     "selfLink": {
      "type": "string",
      "description": "[Output Only] Server-defined URL for this resource."
+    }
+   }
+  },
+  "CacheInvalidationRule": {
+   "id": "CacheInvalidationRule",
+   "type": "object",
+   "properties": {
+    "path": {
+     "type": "string"
+    }
+   }
+  },
+  "CustomerEncryptionKey": {
+   "id": "CustomerEncryptionKey",
+   "type": "object",
+   "description": "Represents a customer-supplied encryption key",
+   "properties": {
+    "rawKey": {
+     "type": "string",
+     "description": "Specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648 base64 to either encrypt or decrypt this resource."
+    },
+    "sha256": {
+     "type": "string",
+     "description": "[Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource."
+    }
+   }
+  },
+  "CustomerEncryptionKeyProtectedDisk": {
+   "id": "CustomerEncryptionKeyProtectedDisk",
+   "type": "object",
+   "properties": {
+    "diskEncryptionKey": {
+     "$ref": "CustomerEncryptionKey",
+     "description": "Decrypts data associated with the disk with a customer-supplied encryption key."
+    },
+    "source": {
+     "type": "string",
+     "description": "Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks."
     }
    }
   },
@@ -947,6 +997,10 @@
      "type": "string",
      "description": "An optional description of this resource. Provide this property when you create the resource."
     },
+    "diskEncryptionKey": {
+     "$ref": "CustomerEncryptionKey",
+     "description": "Encrypts the disk using a customer-supplied encryption key.\n\nAfter you encrypt a disk with a customer-supplied key, you must provide the same key if you use the disk later (e.g. to create a disk snapshot or an image, or to attach the disk to a virtual machine).\n\nCustomer-supplied encryption keys do not protect access to metadata of the disk.\n\nIf you do not provide an encryption key when creating the disk, then the disk will be encrypted using an automatically generated key and you do not need to provide a key to use the disk later."
+    },
     "id": {
      "type": "string",
      "description": "[Output Only] The unique identifier for the resource. This identifier is defined by the server.",
@@ -967,7 +1021,7 @@
     },
     "licenses": {
      "type": "array",
-     "description": "[Output Only] Any applicable publicly visible licenses.",
+     "description": "Any applicable publicly visible licenses.",
      "items": {
       "type": "string"
      }
@@ -999,6 +1053,10 @@
      "type": "string",
      "description": "The source image used to create this disk. If the source image is deleted, this field will not be set.\n\nTo create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:\n\nprojects/debian-cloud/global/images/family/debian-8 \n\nAlternatively, use a specific version of a public operating system image:\n\nprojects/debian-cloud/global/images/debian-8-jessie-vYYYYMMDD \n\nTo create a disk with a private image that you created, specify the image name in the following format:\n\nglobal/images/my-private-image \n\nYou can also specify a private image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:\n\nglobal/images/family/my-private-family"
     },
+    "sourceImageEncryptionKey": {
+     "$ref": "CustomerEncryptionKey",
+     "description": "The customer-supplied encryption key of the source image. Required if the source image is protected by a customer-supplied encryption key."
+    },
     "sourceImageId": {
      "type": "string",
      "description": "[Output Only] The ID value of the image used to create this disk. This value identifies the exact image that was used to create this persistent disk. For example, if you created the persistent disk from an image that was later deleted and recreated under the same name, the source image ID would identify the exact version of the image that was used."
@@ -1006,6 +1064,10 @@
     "sourceSnapshot": {
      "type": "string",
      "description": "The source snapshot used to create this disk. You can provide this as a partial or full URL to the resource. For example, the following are valid values:  \n- https://www.googleapis.com/compute/v1/projects/project/global/snapshots/snapshot \n- projects/project/global/snapshots/snapshot \n- global/snapshots/snapshot"
+    },
+    "sourceSnapshotEncryptionKey": {
+     "$ref": "CustomerEncryptionKey",
+     "description": "The customer-supplied encryption key of the source snapshot. Required if the source snapshot is protected by a customer-supplied encryption key."
     },
     "sourceSnapshotId": {
      "type": "string",
@@ -1471,7 +1533,7 @@
     },
     "sourceTags": {
      "type": "array",
-     "description": "A list of instance tags which this rule applies to. One or both of sourceRanges and sourceTags may be set.\n\nIf both properties are set, an inbound connection is allowed if the range matches the sourceRanges OR the tag of the source matches the sourceTags property. The connection does not need to match both properties.",
+     "description": "A list of instance tags which this rule applies to. One or both of sourceRanges and sourceTags may be set.\n\nIf both properties are set, an inbound connection is allowed if the range matches the sourceRanges OR the tag of the source matches the sourceTags property. The connection does not need to match both properties.\n\nSource tags cannot be used to allow access to an instance's external IP address. Because tags are associated with an instance, not an IP address, source tags can only be used to control traffic traveling from an instance inside the same network as the firewall.",
      "items": {
       "type": "string"
      }
@@ -1523,11 +1585,11 @@
    "properties": {
     "IPAddress": {
      "type": "string",
-     "description": "Value of the reserved IP address that this forwarding rule is serving on behalf of. For global forwarding rules, the address must be a global IP; for regional forwarding rules, the address must live in the same region as the forwarding rule. If left empty (default value), an ephemeral IP from the same scope (global or regional) will be assigned."
+     "description": "The IP address that this forwarding rule is serving on behalf of.\n\nFor global forwarding rules, the address must be a global IP; for regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IP from the same scope (global or regional) will be assigned.\n\nWhen the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule."
     },
     "IPProtocol": {
      "type": "string",
-     "description": "The IP protocol to which this rule applies. Valid options are TCP, UDP, ESP, AH, SCTP or ICMP.",
+     "description": "The IP protocol to which this rule applies. Valid options are TCP, UDP, ESP, AH, SCTP or ICMP.\n\nWhen the load balancing scheme is INTERNAL\u003c/code, only TCP and UDP are valid.",
      "enum": [
       "AH",
       "ESP",
@@ -1568,7 +1630,7 @@
     },
     "portRange": {
      "type": "string",
-     "description": "Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges."
+     "description": "Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.\n\nThis field is not used for internal load balancing."
     },
     "region": {
      "type": "string",
@@ -1580,7 +1642,7 @@
     },
     "target": {
      "type": "string",
-     "description": "The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global TargetHttpProxy or TargetHttpsProxy resource. The forwarded traffic must be of a type appropriate to the target object. For example, TargetHttpProxy requires HTTP traffic, and TargetHttpsProxy requires HTTPS traffic."
+     "description": "The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global TargetHttpProxy or TargetHttpsProxy resource. The forwarded traffic must be of a type appropriate to the target object. For example, TargetHttpProxy requires HTTP traffic, and TargetHttpsProxy requires HTTPS traffic.\n\nThis field is not used for internal load balancing."
     }
    }
   },
@@ -2012,12 +2074,16 @@
     },
     "family": {
      "type": "string",
-     "description": "The name of the image family to which this image belongs. You can create disks by specifying an image family instead of a specific image name. The image family always returns its latest image that is not deprecated."
+     "description": "The name of the image family to which this image belongs. You can create disks by specifying an image family instead of a specific image name. The image family always returns its latest image that is not deprecated. The name of the image family must comply with RFC1035."
     },
     "id": {
      "type": "string",
      "description": "[Output Only] The unique identifier for the resource. This identifier is defined by the server.",
      "format": "uint64"
+    },
+    "imageEncryptionKey": {
+     "$ref": "CustomerEncryptionKey",
+     "description": "Encrypts the image using a customer-supplied encryption key.\n\nAfter you encrypt an image with a customer-supplied key, you must provide the same key if you use the image later (e.g. to create a disk from the image).\n\nCustomer-supplied encryption keys do not protect access to metadata of the disk.\n\nIf you do not provide an encryption key when creating the image, then the disk will be encrypted using an automatically generated key and you do not need to provide a key to use the image later."
     },
     "kind": {
      "type": "string",
@@ -2026,7 +2092,7 @@
     },
     "licenses": {
      "type": "array",
-     "description": "Any applicable publicly visible licenses.",
+     "description": "Any applicable license URI.",
      "items": {
       "type": "string"
      }
@@ -2078,6 +2144,10 @@
     "sourceDisk": {
      "type": "string",
      "description": "URL of the The source disk used to create this image. This can be a full or valid partial URL. You must provide either this property or the rawDisk.source property but not both to create an image. For example, the following are valid values:  \n- https://www.googleapis.com/compute/v1/projects/project/zones/zone/disk/disk \n- projects/project/zones/zone/disk/disk \n- zones/zone/disks/disk"
+    },
+    "sourceDiskEncryptionKey": {
+     "$ref": "CustomerEncryptionKey",
+     "description": "The customer-supplied encryption key of the source disk. Required if the source disk is protected by a customer-supplied encryption key."
     },
     "sourceDiskId": {
      "type": "string",
@@ -2198,7 +2268,7 @@
     },
     "networkInterfaces": {
      "type": "array",
-     "description": "An array of configurations for this interface. This specifies how this interface is configured to interact with other network services, such as connecting to the internet.",
+     "description": "An array of configurations for this interface. This specifies how this interface is configured to interact with other network services, such as connecting to the internet. Only one interface is supported per instance.",
      "items": {
       "$ref": "NetworkInterface"
      }
@@ -2213,14 +2283,14 @@
     },
     "serviceAccounts": {
      "type": "array",
-     "description": "A list of service accounts, with their specified scopes, authorized for this instance. Service accounts generate access tokens that can be accessed through the metadata server and used to authenticate applications on the instance. See Authenticating from Google Compute Engine for more information.",
+     "description": "A list of service accounts, with their specified scopes, authorized for this instance. Service accounts generate access tokens that can be accessed through the metadata server and used to authenticate applications on the instance. See Service Accounts for more information.",
      "items": {
       "$ref": "ServiceAccount"
      }
     },
     "status": {
      "type": "string",
-     "description": "[Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, and TERMINATED.",
+     "description": "[Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, SUSPENDED, SUSPENDING, and TERMINATED.",
      "enum": [
       "PROVISIONING",
       "RUNNING",
@@ -2419,6 +2489,7 @@
   "InstanceGroupManager": {
    "id": "InstanceGroupManager",
    "type": "object",
+   "description": "An Instance Group Manager resource.",
    "properties": {
     "baseInstanceName": {
      "type": "string",
@@ -2520,7 +2591,7 @@
     },
     "creating": {
      "type": "integer",
-     "description": "[Output Only] The number of instances in the managed instance group that are scheduled to be created or are currently being created. If the group fails to create one of these instances, it tries again until it creates the instance successfully.",
+     "description": "[Output Only] The number of instances in the managed instance group that are scheduled to be created or are currently being created. If the group fails to create any of these instances, it tries again until it creates the instance successfully.\n\nIf you have disabled creation retries, this field will not be populated; instead, the creatingWithoutRetries field will be populated.",
      "format": "int32"
     },
     "deleting": {
@@ -2992,7 +3063,7 @@
    "properties": {
     "canIpForward": {
      "type": "boolean",
-     "description": "Enables instances created based on this template to send packets with source IP addresses other than their own and receive packets with destination IP addresses other than their own. If these instances will be used as an IP gateway or it will be set as the next-hop in a Route resource, specify true. If unsure, leave this set to false. See the canIpForward documentation for more information."
+     "description": "Enables instances created based on this template to send packets with source IP addresses other than their own and receive packets with destination IP addresses other than their own. If these instances will be used as an IP gateway or it will be set as the next-hop in a Route resource, specify true. If unsure, leave this set to false. See the Enable IP forwarding for instances documentation for more information."
     },
     "description": {
      "type": "string",
@@ -3255,6 +3326,19 @@
     }
    }
   },
+  "InstancesStartWithEncryptionKeyRequest": {
+   "id": "InstancesStartWithEncryptionKeyRequest",
+   "type": "object",
+   "properties": {
+    "disks": {
+     "type": "array",
+     "description": "Array of disks associated with this instance that are protected with a customer-supplied encryption key.\n\nIn order to start the instance, the disk url and its corresponding key must be provided.\n\nIf the disk is not protected with a customer-supplied encryption key it should not be specified.",
+     "items": {
+      "$ref": "CustomerEncryptionKeyProtectedDisk"
+     }
+    }
+   }
+  },
   "License": {
    "id": "License",
    "type": "object",
@@ -3316,6 +3400,10 @@
      "type": "integer",
      "description": "[Deprecated] This property is deprecated and will never be populated with any relevant values.",
      "format": "int32"
+    },
+    "isSharedCpu": {
+     "type": "boolean",
+     "description": "[Output Only] Whether this machine type has a shared CPU. See Shared-core machine types for more information."
     },
     "kind": {
      "type": "string",
@@ -3512,7 +3600,7 @@
    "properties": {
     "currentAction": {
      "type": "string",
-     "description": "[Output Only] The current action that the managed instance group has scheduled for the instance. Possible values: \n- NONE The instance is running, and the managed instance group does not have any scheduled actions for this instance. \n- CREATING The managed instance group is creating this instance. If the group fails to create this instance, it will try again until it is successful. \n- CREATING_WITHOUT_RETRIES The managed instance group is attempting to create this instance only once. If the group fails to create this instance, it does not try again and the group's target_size value is decreased. \n- RECREATING The managed instance group is recreating this instance. \n- DELETING The managed instance group is permanently deleting this instance. \n- ABANDONING The managed instance group is abandoning this instance. The instance will be removed from the instance group and from any target pools that are associated with this group. \n- RESTARTING The managed instance group is restarting the instance. \n- REFRESHING The managed instance group is applying configuration changes to the instance without stopping it. For example, the group can update the target pool list for an instance without stopping that instance.",
+     "description": "[Output Only] The current action that the managed instance group has scheduled for the instance. Possible values: \n- NONE The instance is running, and the managed instance group does not have any scheduled actions for this instance. \n- CREATING The managed instance group is creating this instance. If the group fails to create this instance, it will try again until it is successful. \n- CREATING_WITHOUT_RETRIES The managed instance group is attempting to create this instance only once. If the group fails to create this instance, it does not try again and the group's targetSize value is decreased instead. \n- RECREATING The managed instance group is recreating this instance. \n- DELETING The managed instance group is permanently deleting this instance. \n- ABANDONING The managed instance group is abandoning this instance. The instance will be removed from the instance group and from any target pools that are associated with this group. \n- RESTARTING The managed instance group is restarting the instance. \n- REFRESHING The managed instance group is applying configuration changes to the instance without stopping it. For example, the group can update the target pool list for an instance without stopping that instance.",
      "enum": [
       "ABANDONING",
       "CREATING",
@@ -3734,7 +3822,7 @@
    "properties": {
     "accessConfigs": {
      "type": "array",
-     "description": "An array of configurations for this interface. Currently, ONE_TO_ONE_NAT is the only access config supported. If there are no accessConfigs specified, then this instance will have no external internet access.",
+     "description": "An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.",
      "items": {
       "$ref": "AccessConfig"
      }
@@ -3754,7 +3842,7 @@
     },
     "networkIP": {
      "type": "string",
-     "description": "An IPV4 internal network address to assign to the instance for this network interface. If not specified by user an unused internal IP is assigned by system."
+     "description": "An IPv4 internal network address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system."
     },
     "subnetwork": {
      "type": "string",
@@ -4191,6 +4279,10 @@
      "type": "string",
      "description": "[Output Only] Creation timestamp in RFC3339 text format."
     },
+    "defaultServiceAccount": {
+     "type": "string",
+     "description": "[Output Only] Default service account used by VMs running in this project."
+    },
     "description": {
      "type": "string",
      "description": "An optional textual description of the resource."
@@ -4262,6 +4354,7 @@
       "IN_USE_ADDRESSES",
       "LOCAL_SSD_TOTAL_GB",
       "NETWORKS",
+      "ROUTERS",
       "ROUTES",
       "SNAPSHOTS",
       "SSD_TOTAL_GB",
@@ -4277,6 +4370,7 @@
       "VPN_TUNNELS"
      ],
      "enumDescriptions": [
+      "",
       "",
       "",
       "",
@@ -4616,6 +4710,376 @@
     }
    }
   },
+  "Router": {
+   "id": "Router",
+   "type": "object",
+   "description": "Router resource.",
+   "properties": {
+    "bgp": {
+     "$ref": "RouterBgp"
+    },
+    "bgpPeers": {
+     "type": "array",
+     "items": {
+      "$ref": "RouterBgpPeer"
+     }
+    },
+    "creationTimestamp": {
+     "type": "string",
+     "description": "[Output Only] Creation timestamp in RFC3339 text format."
+    },
+    "description": {
+     "type": "string",
+     "description": "An optional description of this resource. Provide this property when you create the resource."
+    },
+    "id": {
+     "type": "string",
+     "description": "[Output Only] The unique identifier for the resource. This identifier is defined by the server.",
+     "format": "uint64"
+    },
+    "interfaces": {
+     "type": "array",
+     "items": {
+      "$ref": "RouterInterface"
+     }
+    },
+    "kind": {
+     "type": "string",
+     "description": "[Output Only] Type of resource. Always compute#router for routers.",
+     "default": "compute#router"
+    },
+    "name": {
+     "type": "string",
+     "description": "Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.",
+     "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+     "annotations": {
+      "required": [
+       "compute.routers.insert"
+      ]
+     }
+    },
+    "network": {
+     "type": "string",
+     "description": "URI of the network to which this router belongs.",
+     "annotations": {
+      "required": [
+       "compute.routers.insert"
+      ]
+     }
+    },
+    "region": {
+     "type": "string",
+     "description": "[Output Only] URI of the region where the router resides."
+    },
+    "selfLink": {
+     "type": "string",
+     "description": "[Output Only] Server-defined URL for the resource."
+    }
+   }
+  },
+  "RouterAggregatedList": {
+   "id": "RouterAggregatedList",
+   "type": "object",
+   "description": "Contains a list of routers.",
+   "properties": {
+    "id": {
+     "type": "string",
+     "description": "[Output Only] The unique identifier for the resource. This identifier is defined by the server."
+    },
+    "items": {
+     "type": "object",
+     "description": "A map of scoped router lists.",
+     "additionalProperties": {
+      "$ref": "RoutersScopedList",
+      "description": "Name of the scope containing this set of routers."
+     }
+    },
+    "kind": {
+     "type": "string",
+     "description": "Type of resource.",
+     "default": "compute#routerAggregatedList"
+    },
+    "nextPageToken": {
+     "type": "string",
+     "description": "[Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results."
+    },
+    "selfLink": {
+     "type": "string",
+     "description": "[Output Only] Server-defined URL for this resource."
+    }
+   }
+  },
+  "RouterBgp": {
+   "id": "RouterBgp",
+   "type": "object",
+   "properties": {
+    "asn": {
+     "type": "integer",
+     "description": "Local BGP Autonomous System Number (ASN). Must be an RFC6996 private ASN, either 16-bit or 32-bit. The value will be fixed for this router resource. All VPN tunnels that link to this router will have the same local ASN.",
+     "format": "uint32"
+    }
+   }
+  },
+  "RouterBgpPeer": {
+   "id": "RouterBgpPeer",
+   "type": "object",
+   "description": "BGP information that needs to be configured into the routing stack to establish the BGP peering. It must specify peer ASN and either interface name, IP, or peer IP. Reference: https://tools.ietf.org/html/rfc4273",
+   "properties": {
+    "advertisedRoutePriority": {
+     "type": "integer",
+     "description": "The priority of routes advertised to this BGP peer. In the case where there is more than one matching route of maximum length, the routes with lowest priority value win.",
+     "format": "uint32"
+    },
+    "interfaceName": {
+     "type": "string",
+     "description": "Name of the interface the BGP peer is associated with."
+    },
+    "ipAddress": {
+     "type": "string",
+     "description": "IP address of the interface inside Google Cloud Platform."
+    },
+    "name": {
+     "type": "string",
+     "description": "Name of this BGP peer. The name must be 1-63 characters long and comply with RFC1035.",
+     "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?"
+    },
+    "peerAsn": {
+     "type": "integer",
+     "description": "Peer BGP Autonomous System Number (ASN). For VPN use case, this value can be different for every tunnel.",
+     "format": "uint32"
+    },
+    "peerIpAddress": {
+     "type": "string",
+     "description": "IP address of the BGP interface outside Google cloud."
+    }
+   }
+  },
+  "RouterInterface": {
+   "id": "RouterInterface",
+   "type": "object",
+   "description": "Router interfaces. Each interface requires either one linked resource (e.g. linked_vpn_tunnel) or IP address + range (specified in ip_range).",
+   "properties": {
+    "ipRange": {
+     "type": "string",
+     "description": "IP address and range of the interface. The IP range must be in the RFC3927 link-local IP space. The value must be a CIDR-formatted string, for example: 169.254.0.1/30. NOTE: Do not truncate the address as it represents the IP address of the interface."
+    },
+    "linkedVpnTunnel": {
+     "type": "string",
+     "description": "URI of linked VPN tunnel. It must be in the same region as the router. Each interface can have at most one linked resource."
+    },
+    "name": {
+     "type": "string",
+     "description": "Name of this interface entry. The name must be 1-63 characters long and comply with RFC1035.",
+     "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?"
+    }
+   }
+  },
+  "RouterList": {
+   "id": "RouterList",
+   "type": "object",
+   "description": "Contains a list of Router resources.",
+   "properties": {
+    "id": {
+     "type": "string",
+     "description": "[Output Only] The unique identifier for the resource. This identifier is defined by the server."
+    },
+    "items": {
+     "type": "array",
+     "description": "A list of Router resources.",
+     "items": {
+      "$ref": "Router"
+     }
+    },
+    "kind": {
+     "type": "string",
+     "description": "[Output Only] Type of resource. Always compute#router for routers.",
+     "default": "compute#routerList"
+    },
+    "nextPageToken": {
+     "type": "string",
+     "description": "[Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results."
+    },
+    "selfLink": {
+     "type": "string",
+     "description": "[Output Only] Server-defined URL for the resource."
+    }
+   }
+  },
+  "RouterStatus": {
+   "id": "RouterStatus",
+   "type": "object",
+   "properties": {
+    "bestRoutes": {
+     "type": "array",
+     "description": "Best routes for this router's network.",
+     "items": {
+      "$ref": "Route"
+     }
+    },
+    "bgpPeerStatus": {
+     "type": "array",
+     "items": {
+      "$ref": "RouterStatusBgpPeerStatus"
+     }
+    },
+    "network": {
+     "type": "string",
+     "description": "URI of the network to which this router belongs."
+    }
+   }
+  },
+  "RouterStatusBgpPeerStatus": {
+   "id": "RouterStatusBgpPeerStatus",
+   "type": "object",
+   "properties": {
+    "advertisedRoutes": {
+     "type": "array",
+     "description": "Routes that were advertised to the remote BGP peer",
+     "items": {
+      "$ref": "Route"
+     }
+    },
+    "ipAddress": {
+     "type": "string",
+     "description": "IP address of the local BGP interface."
+    },
+    "linkedVpnTunnel": {
+     "type": "string",
+     "description": "URL of the VPN tunnel that this BGP peer controls."
+    },
+    "name": {
+     "type": "string",
+     "description": "Name of this BGP peer. Unique within the Routers resource."
+    },
+    "numLearnedRoutes": {
+     "type": "integer",
+     "description": "Number of routes learned from the remote BGP Peer.",
+     "format": "uint32"
+    },
+    "peerIpAddress": {
+     "type": "string",
+     "description": "IP address of the remote BGP interface."
+    },
+    "state": {
+     "type": "string",
+     "description": "BGP state as specified in RFC1771."
+    },
+    "status": {
+     "type": "string",
+     "description": "Status of the BGP peer: {UP, DOWN}",
+     "enum": [
+      "DOWN",
+      "UNKNOWN",
+      "UP"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      ""
+     ]
+    },
+    "uptime": {
+     "type": "string",
+     "description": "Time this session has been up. Format: 14 years, 51 weeks, 6 days, 23 hours, 59 minutes, 59 seconds"
+    },
+    "uptimeSeconds": {
+     "type": "string",
+     "description": "Time this session has been up, in seconds. Format: 145"
+    }
+   }
+  },
+  "RouterStatusResponse": {
+   "id": "RouterStatusResponse",
+   "type": "object",
+   "properties": {
+    "kind": {
+     "type": "string",
+     "description": "Type of resource.",
+     "default": "compute#routerStatusResponse"
+    },
+    "result": {
+     "$ref": "RouterStatus"
+    }
+   }
+  },
+  "RoutersScopedList": {
+   "id": "RoutersScopedList",
+   "type": "object",
+   "properties": {
+    "routers": {
+     "type": "array",
+     "description": "List of routers contained in this scope.",
+     "items": {
+      "$ref": "Router"
+     }
+    },
+    "warning": {
+     "type": "object",
+     "description": "Informational warning which replaces the list of routers when the list is empty.",
+     "properties": {
+      "code": {
+       "type": "string",
+       "description": "[Output Only] A warning code, if applicable. For example, Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in the response.",
+       "enum": [
+        "CLEANUP_FAILED",
+        "DEPRECATED_RESOURCE_USED",
+        "DISK_SIZE_LARGER_THAN_IMAGE_SIZE",
+        "INJECTED_KERNELS_DEPRECATED",
+        "NEXT_HOP_ADDRESS_NOT_ASSIGNED",
+        "NEXT_HOP_CANNOT_IP_FORWARD",
+        "NEXT_HOP_INSTANCE_NOT_FOUND",
+        "NEXT_HOP_INSTANCE_NOT_ON_NETWORK",
+        "NEXT_HOP_NOT_RUNNING",
+        "NOT_CRITICAL_ERROR",
+        "NO_RESULTS_ON_PAGE",
+        "REQUIRED_TOS_AGREEMENT",
+        "RESOURCE_NOT_DELETED",
+        "SINGLE_INSTANCE_PROPERTY_TEMPLATE",
+        "UNREACHABLE"
+       ],
+       "enumDescriptions": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      "data": {
+       "type": "array",
+       "description": "[Output Only] Metadata about this warning in key: value format. For example:\n\"data\": [ { \"key\": \"scope\", \"value\": \"zones/us-east1-d\" }",
+       "items": {
+        "type": "object",
+        "properties": {
+         "key": {
+          "type": "string",
+          "description": "[Output Only] A key that provides more detail on the warning being returned. For example, for warnings where there are no results in a list request for a particular zone, this key might be scope and the key value might be the zone name. Other examples might be a key indicating a deprecated resource and a suggested replacement, or a warning about invalid network settings (for example, if an instance attempts to perform IP forwarding but is not enabled for IP forwarding)."
+         },
+         "value": {
+          "type": "string",
+          "description": "[Output Only] A warning data value corresponding to the key."
+         }
+        }
+       }
+      },
+      "message": {
+       "type": "string",
+       "description": "[Output Only] A human-readable description of the warning code."
+      }
+     }
+    }
+   }
+  },
   "Scheduling": {
    "id": "Scheduling",
    "type": "object",
@@ -4725,9 +5189,17 @@
      "type": "string",
      "description": "[Output Only] Server-defined URL for the resource."
     },
+    "snapshotEncryptionKey": {
+     "$ref": "CustomerEncryptionKey",
+     "description": "Encrypts the snapshot using a customer-supplied encryption key.\n\nAfter you encrypt a snapshot using a customer-supplied key, you must provide the same key if you use the image later For example, you must provide the encryption key when you create a disk from the encrypted snapshot in a future request.\n\nCustomer-supplied encryption keys do not protect access to metadata of the disk.\n\nIf you do not provide an encryption key when creating the snapshot, then the snapshot will be encrypted using an automatically generated key and you do not need to provide a key to use the snapshot later."
+    },
     "sourceDisk": {
      "type": "string",
      "description": "[Output Only] The source disk used to create this snapshot."
+    },
+    "sourceDiskEncryptionKey": {
+     "$ref": "CustomerEncryptionKey",
+     "description": "The customer-supplied encryption key of the source disk. Required if the source disk is protected by a customer-supplied encryption key."
     },
     "sourceDiskId": {
      "type": "string",
@@ -6023,7 +6495,7 @@
     },
     "tests": {
      "type": "array",
-     "description": "The list of expected URL mappings. Request to update this UrlMap will succeed only all of the test cases pass.",
+     "description": "The list of expected URL mappings. Request to update this UrlMap will succeed only if all of the test cases pass.",
      "items": {
       "$ref": "UrlMapTest"
      }
@@ -6209,6 +6681,17 @@
     "region": {
      "type": "string",
      "description": "[Output Only] URL of the region where the VPN tunnel resides."
+    },
+    "remoteTrafficSelector": {
+     "type": "array",
+     "description": "Remote traffic selectors to use when establishing the VPN tunnel with peer VPN gateway. The value should be a CIDR formatted string, for example: 192.168.0.0/16. The ranges should be disjoint.",
+     "items": {
+      "type": "string"
+     }
+    },
+    "router": {
+     "type": "string",
+     "description": "URL of router resource to be used for dynamic routing."
     },
     "selfLink": {
      "type": "string",
@@ -6522,7 +7005,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -6555,7 +7038,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -6596,7 +7079,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -6631,7 +7114,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -6686,7 +7169,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -6743,7 +7226,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -6776,7 +7259,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -6817,7 +7300,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -6852,7 +7335,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -6907,7 +7390,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -6948,7 +7431,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -6991,7 +7474,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -7038,7 +7521,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7071,7 +7554,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7104,7 +7587,7 @@
       "project": {
        "type": "string",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7134,7 +7617,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7181,7 +7664,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7214,7 +7697,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7250,7 +7733,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7302,7 +7785,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7335,7 +7818,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -7389,7 +7872,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -7446,7 +7929,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7479,7 +7962,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -7523,7 +8006,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -7564,7 +8047,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -7599,7 +8082,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "sourceImage": {
@@ -7659,7 +8142,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -7700,7 +8183,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -7748,7 +8231,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7781,7 +8264,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7808,7 +8291,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7855,7 +8338,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7888,7 +8371,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7924,7 +8407,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -7976,7 +8459,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8009,7 +8492,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -8050,7 +8533,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -8085,7 +8568,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -8140,7 +8623,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -8181,7 +8664,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -8229,7 +8712,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8262,7 +8745,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8289,7 +8772,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8336,7 +8819,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8373,7 +8856,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8406,7 +8889,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8433,7 +8916,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8480,7 +8963,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8513,7 +8996,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8565,7 +9048,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8598,7 +9081,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8628,7 +9111,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8674,7 +9157,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8711,7 +9194,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8744,7 +9227,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8771,7 +9254,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8818,7 +9301,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8851,7 +9334,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8887,7 +9370,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8927,7 +9410,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8960,7 +9443,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -8987,7 +9470,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -9034,7 +9517,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -9067,7 +9550,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -9103,7 +9586,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -9143,7 +9626,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -9176,7 +9659,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -9212,7 +9695,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -9237,7 +9720,7 @@
      "parameters": {
       "family": {
        "type": "string",
-       "description": "Name of the image resource to return.",
+       "description": "Name of the image family to search for.",
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
@@ -9246,7 +9729,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -9273,7 +9756,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -9298,7 +9781,7 @@
      "id": "compute.images.list",
      "path": "{project}/global/images",
      "httpMethod": "GET",
-     "description": "Retrieves the list of private images available to the specified project. Private images are images you create that belong to your project. This method does not get any images that belong to other projects, including publicly-available images, like Debian 7. If you want to get a list of publicly-available images, use this method to make a request to the respective image project, such as debian-cloud or windows-cloud.\n\nSee Accessing images for more information.",
+     "description": "Retrieves the list of private images available to the specified project. Private images are images you create that belong to your project. This method does not get any images that belong to other projects, including publicly-available images, like Debian 8. If you want to get a list of publicly-available images, use this method to make a request to the respective image project, such as debian-cloud or windows-cloud.",
      "parameters": {
       "filter": {
        "type": "string",
@@ -9323,7 +9806,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -9359,7 +9842,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -9414,7 +9897,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -9446,7 +9929,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -9485,7 +9968,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -9527,7 +10010,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -9561,7 +10044,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -9615,7 +10098,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -9654,7 +10137,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -9694,7 +10177,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -9736,7 +10219,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "size": {
@@ -9783,7 +10266,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -9825,7 +10308,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -9871,7 +10354,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -9926,7 +10409,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -9958,7 +10441,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -9997,7 +10480,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10031,7 +10514,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10085,7 +10568,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10143,7 +10626,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10186,7 +10669,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10228,7 +10711,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10275,7 +10758,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -10308,7 +10791,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -10335,7 +10818,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -10382,7 +10865,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -10425,7 +10908,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10482,7 +10965,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -10515,7 +10998,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10559,7 +11042,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10612,7 +11095,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10662,7 +11145,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10704,7 +11187,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10755,7 +11238,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10790,7 +11273,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10845,7 +11328,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10886,7 +11369,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10940,7 +11423,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -10983,7 +11466,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -11027,7 +11510,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -11071,7 +11554,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -11115,7 +11598,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -11159,7 +11642,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -11175,6 +11658,50 @@
       "zone",
       "instance"
      ],
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "startWithEncryptionKey": {
+     "id": "compute.instances.startWithEncryptionKey",
+     "path": "{project}/zones/{zone}/instances/{instance}/startWithEncryptionKey",
+     "httpMethod": "POST",
+     "description": "Starts an instance that was stopped using the using the instances().stop method. For more information, see Restart an instance.",
+     "parameters": {
+      "instance": {
+       "type": "string",
+       "description": "Name of the instance resource to start.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "zone": {
+       "type": "string",
+       "description": "The name of the zone for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "zone",
+      "instance"
+     ],
+     "request": {
+      "$ref": "InstancesStartWithEncryptionKeyRequest"
+     },
      "response": {
       "$ref": "Operation"
      },
@@ -11200,7 +11727,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -11245,7 +11772,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -11295,7 +11822,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -11328,7 +11855,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -11382,7 +11909,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -11427,7 +11954,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -11460,7 +11987,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -11487,7 +12014,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -11534,7 +12061,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -11564,7 +12091,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -11590,7 +12117,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -11618,7 +12145,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -11646,7 +12173,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -11674,7 +12201,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -11716,7 +12243,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -11754,7 +12281,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -11808,7 +12335,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -11846,7 +12373,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -11899,7 +12426,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -11917,6 +12444,357 @@
     }
    }
   },
+  "routers": {
+   "methods": {
+    "aggregatedList": {
+     "id": "compute.routers.aggregatedList",
+     "path": "{project}/aggregated/routers",
+     "httpMethod": "GET",
+     "description": "Retrieves an aggregated list of routers.",
+     "parameters": {
+      "filter": {
+       "type": "string",
+       "description": "Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.\n\nThe field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.\n\nFor example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.\n\nCompute Engine Beta API Only: When filtering in the Beta API, you can also filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.\n\nThe Beta API also supports filtering on multiple expressions by providing each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.",
+       "location": "query"
+      },
+      "maxResults": {
+       "type": "integer",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
+       "default": "500",
+       "format": "uint32",
+       "minimum": "0",
+       "maximum": "500",
+       "location": "query"
+      },
+      "pageToken": {
+       "type": "string",
+       "description": "Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.",
+       "location": "query"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project"
+     ],
+     "response": {
+      "$ref": "RouterAggregatedList"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "delete": {
+     "id": "compute.routers.delete",
+     "path": "{project}/regions/{region}/routers/{router}",
+     "httpMethod": "DELETE",
+     "description": "Deletes the specified Router resource.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "region": {
+       "type": "string",
+       "description": "Name of the region for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "router": {
+       "type": "string",
+       "description": "Name of the Router resource to delete.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "region",
+      "router"
+     ],
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "get": {
+     "id": "compute.routers.get",
+     "path": "{project}/regions/{region}/routers/{router}",
+     "httpMethod": "GET",
+     "description": "Returns the specified Router resource. Get a list of available routers by making a list() request.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "region": {
+       "type": "string",
+       "description": "Name of the region for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "router": {
+       "type": "string",
+       "description": "Name of the Router resource to return.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "region",
+      "router"
+     ],
+     "response": {
+      "$ref": "Router"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "getRouterStatus": {
+     "id": "compute.routers.getRouterStatus",
+     "path": "{project}/regions/{region}/routers/{router}/getRouterStatus",
+     "httpMethod": "GET",
+     "description": "Retrieves runtime information of the specified router.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "region": {
+       "type": "string",
+       "description": "Name of the region for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "router": {
+       "type": "string",
+       "description": "Name of the Router resource to query.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "region",
+      "router"
+     ],
+     "response": {
+      "$ref": "RouterStatusResponse"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "insert": {
+     "id": "compute.routers.insert",
+     "path": "{project}/regions/{region}/routers",
+     "httpMethod": "POST",
+     "description": "Creates a Router resource in the specified project and region using the data included in the request.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "region": {
+       "type": "string",
+       "description": "Name of the region for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "region"
+     ],
+     "request": {
+      "$ref": "Router"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "list": {
+     "id": "compute.routers.list",
+     "path": "{project}/regions/{region}/routers",
+     "httpMethod": "GET",
+     "description": "Retrieves a list of Router resources available to the specified project.",
+     "parameters": {
+      "filter": {
+       "type": "string",
+       "description": "Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.\n\nThe field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.\n\nFor example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.\n\nCompute Engine Beta API Only: When filtering in the Beta API, you can also filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.\n\nThe Beta API also supports filtering on multiple expressions by providing each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.",
+       "location": "query"
+      },
+      "maxResults": {
+       "type": "integer",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
+       "default": "500",
+       "format": "uint32",
+       "minimum": "0",
+       "maximum": "500",
+       "location": "query"
+      },
+      "pageToken": {
+       "type": "string",
+       "description": "Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.",
+       "location": "query"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "region": {
+       "type": "string",
+       "description": "Name of the region for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "region"
+     ],
+     "response": {
+      "$ref": "RouterList"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "patch": {
+     "id": "compute.routers.patch",
+     "path": "{project}/regions/{region}/routers/{router}",
+     "httpMethod": "PATCH",
+     "description": "Updates the entire content of the Router resource. This method supports patch semantics.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "region": {
+       "type": "string",
+       "description": "Name of the region for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "router": {
+       "type": "string",
+       "description": "Name of the Router resource to update.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "region",
+      "router"
+     ],
+     "request": {
+      "$ref": "Router"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "update": {
+     "id": "compute.routers.update",
+     "path": "{project}/regions/{region}/routers/{router}",
+     "httpMethod": "PUT",
+     "description": "Updates the entire content of the Router resource.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "region": {
+       "type": "string",
+       "description": "Name of the region for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "router": {
+       "type": "string",
+       "description": "Name of the Router resource to update.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "region",
+      "router"
+     ],
+     "request": {
+      "$ref": "Router"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    }
+   }
+  },
   "routes": {
    "methods": {
     "delete": {
@@ -11929,7 +12807,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "route": {
@@ -11962,7 +12840,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "route": {
@@ -11996,7 +12874,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -12043,7 +12921,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -12073,7 +12951,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "snapshot": {
@@ -12106,7 +12984,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "snapshot": {
@@ -12159,7 +13037,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -12189,7 +13067,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "sslCertificate": {
@@ -12222,7 +13100,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "sslCertificate": {
@@ -12256,7 +13134,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -12303,7 +13181,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -12352,7 +13230,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -12378,7 +13256,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -12419,7 +13297,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -12461,7 +13339,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -12516,7 +13394,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -12554,7 +13432,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "targetHttpProxy": {
@@ -12587,7 +13465,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "targetHttpProxy": {
@@ -12621,7 +13499,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -12668,7 +13546,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -12694,7 +13572,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "targetHttpProxy": {
@@ -12734,7 +13612,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "targetHttpsProxy": {
@@ -12767,7 +13645,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "targetHttpsProxy": {
@@ -12801,7 +13679,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -12848,7 +13726,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -12874,7 +13752,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "targetHttpsProxy": {
@@ -12910,7 +13788,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "targetHttpsProxy": {
@@ -12969,7 +13847,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -12995,7 +13873,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "targetInstance": {
@@ -13036,7 +13914,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "targetInstance": {
@@ -13078,7 +13956,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -13133,7 +14011,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -13171,7 +14049,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13215,7 +14093,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13278,7 +14156,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -13304,7 +14182,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13345,7 +14223,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13387,7 +14265,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13432,7 +14310,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13487,7 +14365,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13521,7 +14399,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13565,7 +14443,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13615,7 +14493,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13682,7 +14560,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -13708,7 +14586,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13749,7 +14627,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13791,7 +14669,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13846,7 +14724,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -13884,7 +14762,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "urlMap": {
@@ -13917,7 +14795,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "urlMap": {
@@ -13951,7 +14829,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -13960,6 +14838,42 @@
      ],
      "request": {
       "$ref": "UrlMap"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "invalidateCache": {
+     "id": "compute.urlMaps.invalidateCache",
+     "path": "{project}/global/urlMaps/{urlMap}/invalidateCache",
+     "httpMethod": "POST",
+     "description": "Initiates a cache invalidation operation, invalidating the specified path, scoped to the specified UrlMap.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "urlMap": {
+       "type": "string",
+       "description": "Name of the UrlMap scoping this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "urlMap"
+     ],
+     "request": {
+      "$ref": "CacheInvalidationRule"
      },
      "response": {
       "$ref": "Operation"
@@ -13998,7 +14912,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -14024,7 +14938,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "urlMap": {
@@ -14060,7 +14974,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "urlMap": {
@@ -14096,7 +15010,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "urlMap": {
@@ -14155,7 +15069,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },
@@ -14181,7 +15095,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -14222,7 +15136,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -14264,7 +15178,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -14319,7 +15233,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "region": {
@@ -14364,7 +15278,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -14402,7 +15316,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -14456,7 +15370,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -14494,7 +15408,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
       "zone": {
@@ -14547,7 +15461,7 @@
        "type": "string",
        "description": "Project ID for this request.",
        "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       }
      },

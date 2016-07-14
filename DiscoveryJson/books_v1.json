@@ -1,13 +1,13 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"jQLIOHBVnDZie4rQHGH1WJF-INE/EKgCMl0lR3W1RkwoySiKYH3FM7c\"",
+ "etag": "\"C5oy1hgQsABtYOYIOXWcR3BgYqU/dTpM2VF_m4UO2vIUhr3yxAh6Tyw\"",
  "discoveryVersion": "v1",
  "id": "books:v1",
  "name": "books",
  "version": "v1",
- "revision": "20160411",
+ "revision": "20160629",
  "title": "Books API",
- "description": "Lets you search for books and manage your Google Books library.",
+ "description": "Searches for books and manages your Google Books library.",
  "ownerDomain": "google.com",
  "ownerName": "Google",
  "icons": {
@@ -1448,6 +1448,14 @@
          "type": "string"
         }
        }
+      },
+      "moreFromSeries": {
+       "type": "object",
+       "properties": {
+        "opted_state": {
+         "type": "string"
+        }
+       }
       }
      }
     }
@@ -1634,6 +1642,10 @@
           "type": "integer",
           "description": "The finsky offer type (e.g., PURCHASE=0 RENTAL=3)",
           "format": "int32"
+         },
+         "giftable": {
+          "type": "boolean",
+          "description": "Indicates whether the offer is giftable."
          },
          "listPrice": {
           "type": "object",
@@ -1971,6 +1983,24 @@
        "type": "integer",
        "description": "Total number of pages as per publisher metadata.",
        "format": "int32"
+      },
+      "panelizationSummary": {
+       "type": "object",
+       "description": "A top-level summary of the panelization info in this volume.",
+       "properties": {
+        "containsEpubBubbles": {
+         "type": "boolean"
+        },
+        "containsImageBubbles": {
+         "type": "boolean"
+        },
+        "epubBubbleVersion": {
+         "type": "string"
+        },
+        "imageBubbleVersion": {
+         "type": "string"
+        }
+       }
       },
       "previewLink": {
        "type": "string",
@@ -4319,8 +4349,9 @@
        "parameters": {
         "acquireMethod": {
          "type": "string",
-         "description": "How the book was aquired",
+         "description": "How the book was acquired",
          "enum": [
+          "FAMILY_SHARED",
           "PREORDERED",
           "PREVIOUSLY_RENTED",
           "PUBLIC_DOMAIN",
@@ -4330,6 +4361,7 @@
           "UPLOADED"
          ],
          "enumDescriptions": [
+          "Books acquired via Family Sharing",
           "Preordered books (not yet available)",
           "User-rented books past their expiration time",
           "Public domain books",

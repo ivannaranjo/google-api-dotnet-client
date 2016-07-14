@@ -38,14 +38,16 @@ namespace Google.Apis.Tests.Apis.Upload
     class ResumableUploadTest
     {
         /// <summary>
-        /// Mock string to upload to the media server. It contains 453 bytes, and in most cases we will use a chunk 
-        /// size of 100. 
+        /// Mock string to upload to the media server. It contains 454 bytes, and in most cases we will use a chunk 
+        /// size of 100. There are 3 spaces on the end of each line because the original carriage return line endings
+        /// caused differences between Windows and Linux test results.
         /// </summary>
-        static string UploadTestData = @"Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod 
-tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris 
-nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore 
-eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit 
-anim id est laborum.";
+        static string UploadTestData = 
+            "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod   " +
+            "tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris   " +
+            "nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore   " +
+            "eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit   " +
+            "anim id est laborum.";
 
         [OneTimeSetUp]
         public void SetUp()
@@ -173,6 +175,8 @@ anim id est laborum.";
             /// <summary>Gets or sets the path parameters which should be part of the initialize request.</summary>
             public string PathParameters { get; set; }
 
+            public string ExpectedContentType { get; set; } = "text/plain";
+
             protected override Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request,
                 CancellationToken cancellationToken)
             {
@@ -191,8 +195,12 @@ anim id est laborum.";
                         }
                         Assert.That(request.RequestUri.Query, Is.EqualTo("?uploadType=resumable" + QueryParameters));
 
-                        Assert.That(request.Headers.GetValues("X-Upload-Content-Type").First(),
-                            Is.EqualTo("text/plain"));
+                        // HttpRequestMessage doesn't make it terrible easy to get a header value speculatively...
+                        string actualContentType = request.Headers
+                            .Where(h => h.Key == "X-Upload-Content-Type")
+                            .Select(h => h.Value.FirstOrDefault())
+                            .FirstOrDefault();
+                        Assert.That(actualContentType, Is.EqualTo(ExpectedContentType));
                         Assert.That(request.Headers.GetValues("X-Upload-Content-Length").First(),
                             Is.EqualTo(StreamLength.ToString()));
 
@@ -474,7 +482,7 @@ anim id est laborum.";
                         if (bytesRecieved != len)
                         {
                             response.StatusCode = (HttpStatusCode)308;
-                            response.Headers.Add("Range", string.Format("bytes {0}-{1}", bytesRecieved, chunkEnd));
+                            response.Headers.Add("Range", string.Format("bytes 0-{0}", bytesRecieved - 1));
                         }
 
                     }
@@ -609,6 +617,30 @@ anim id est laborum.";
             Assert.That(handler.Calls, Is.EqualTo(2));
         }
 
+        [Test]
+        public void TestUploadNullContentType()
+        {
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes(UploadTestData));
+            var handler = new SingleChunkMessageHandler()
+            {
+                StreamLength = stream.Length,
+                ExpectedContentType = null
+            };
+            using (var service = new MockClientService(new BaseClientService.Initializer()
+            {
+                HttpClientFactory = new MockHttpClientFactory(handler)
+            }))
+            {
+
+                int chunkSize = UploadTestData.Length + 10;
+                var upload = new MockResumableUpload(service, "", "POST", stream, null, chunkSize);
+                // Chunk size is bigger than the data we are sending.
+                upload.Upload();
+            }
+
+            Assert.That(handler.Calls, Is.EqualTo(2));
+        }
+
         /// <summary>Tests uploading a single chunk.</summary>
         [Test]
         public void TestUploadSingleChunk_ExactChunkSize()
@@ -714,7 +746,7 @@ anim id est laborum.";
             SubtestTestChunkUpload(knownSize, 12, ServerError.ServerUnavailable, 50, 10);
 
             // Server received partial bytes from chunk 4
-            // we expect 12 calls: 1 initial request + 1 call to query the range + 11 chunks (0-49, 50-99, 100-149, 
+            // we expect 13 calls: 1 initial request + 1 call to query the range + 11 chunks (0-49, 50-99, 100-149, 
             // 101-150, 151-200, 201-250, 251-300, 301-350, 351-400, 401-450, 451-453
             SubtestTestChunkUpload(knownSize, 13, ServerError.ServerUnavailable, 50, 1);
 

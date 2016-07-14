@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"jQLIOHBVnDZie4rQHGH1WJF-INE/EYoNIxE5X6XHXUbP2k57cDc1iCA\"",
+ "etag": "\"C5oy1hgQsABtYOYIOXWcR3BgYqU/SHTeXAwbVQqmcFteXreQsbDHiMI\"",
  "discoveryVersion": "v1",
  "id": "bigquery:v2",
  "name": "bigquery",
  "version": "v2",
- "revision": "20160427",
+ "revision": "20160629",
  "title": "BigQuery API",
  "description": "A data platform for customers to create, manage, share and query data.",
  "ownerDomain": "google.com",
@@ -27,11 +27,9 @@
    "description": "Data format for the response.",
    "default": "json",
    "enum": [
-    "csv",
     "json"
    ],
    "enumDescriptions": [
-    "Responses with Content-Type of text/csv",
     "Responses with Content-Type of application/json"
    ],
    "location": "query"
@@ -122,7 +120,7 @@
     },
     "type": {
      "type": "string",
-     "description": "[Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Defaut type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels."
+     "description": "[Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels."
     }
    }
   },
@@ -151,7 +149,7 @@
     },
     "type": {
      "type": "string",
-     "description": "[Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Defaut type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it."
+     "description": "[Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it."
     }
    }
   },
@@ -515,7 +513,7 @@
     },
     "sourceUris": {
      "type": "array",
-     "description": "[Required] The fully-qualified URIs that point to your data in Google Cloud. For Google Cloud Storage URIs: Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs. For Google Cloud Bigtable URIs: Exactly one URI can be specified and it has be a fully specified and valid HTTPS URL for a Google Cloud Bigtable table. For Google Cloud Datastore backups, exactly one URI can be specified, and it must end with '.backup_info'. Also, the '*' wildcard character is not allowed.",
+     "description": "[Required] The fully-qualified URIs that point to your data in Google Cloud. For Google Cloud Storage URIs: Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources. For Google Cloud Bigtable URIs: Exactly one URI can be specified and it has be a fully specified and valid HTTPS URL for a Google Cloud Bigtable table. For Google Cloud Datastore backups, exactly one URI can be specified, and it must end with '.backup_info'. Also, the '*' wildcard character is not allowed.",
      "items": {
       "type": "string"
      }
@@ -726,6 +724,10 @@
      "type": "boolean",
      "description": "Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false."
     },
+    "autodetect": {
+     "type": "boolean",
+     "description": "[Experimental] Indicates if we should automatically infer the options and schema for CSV and JSON sources."
+    },
     "createDisposition": {
      "type": "string",
      "description": "[Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion."
@@ -828,6 +830,11 @@
      "description": "[Optional] Limits the billing tier for this job. Queries that have resource usage beyond this tier will fail (without incurring a charge). If unspecified, this will be set to your project default.",
      "default": "1",
      "format": "int32"
+    },
+    "maximumBytesBilled": {
+     "type": "string",
+     "description": "[Optional] Limits the bytes billed for this job. Queries that will have bytes billed beyond this limit will fail (without incurring a charge). If unspecified, this will be set to your project default.",
+     "format": "int64"
     },
     "preserveNulls": {
      "type": "boolean",
@@ -1387,6 +1394,11 @@
      "description": "[Output-only] The size of this table in bytes, excluding any data in the streaming buffer.",
      "format": "int64"
     },
+    "numLongTermBytes": {
+     "type": "string",
+     "description": "[Output-only] The number of bytes in the table that are considered \"long-term storage\".",
+     "format": "int64"
+    },
     "numRows": {
      "type": "string",
      "description": "[Output-only] The number of rows of data in this table, excluding any data in the streaming buffer.",
@@ -1712,6 +1724,10 @@
     "query": {
      "type": "string",
      "description": "[Required] A query that BigQuery executes when the view is referenced."
+    },
+    "useLegacySql": {
+     "type": "boolean",
+     "description": "[Experimental] Specifies whether to use BigQuery's legacy SQL for this view. The default value is true. If set to false, the view will use BigQuery's standard SQL: https://cloud.google.com/bigquery/sql-reference/ Queries and views that reference this view must use the same flag value."
     },
     "userDefinedFunctionResources": {
      "type": "array",
