@@ -1,7 +1,7 @@
 # Configuration for the build and test for the GoogleApis project.
 
 # Version for the build.
-version: 1.0.{version}-{branch}
+version: 1.0.{build}-{branch}
 
 # We're using Visual Studio 2015
 image: Visual Studio 2015
