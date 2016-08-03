@@ -1,0 +1,25 @@
+# Configuration for the build and test for the GoogleApis project.
+
+# Version for the build.
+version: 1.0.{version}-{branch}
+
+# We're using Visual Studio 2015
+image: Visual Studio 2015
+
+# Install the pre-requisites for the build.
+install:
+  # Download and install the nunit runner.
+  - nuget install NUnit.ConsoleRunner -Version 3.2.1 -OutputDirectory testrunner
+  # Download the installer for dotnet.
+  - mkdir .\scripts
+  - curl -SL https://raw.githubusercontent.com/dotnet/cli/rel/1.0.0/scripts/obtain/dotnet-install.ps1 -o .\scripts\dotnet-install.ps1
+  - ps: $env:DOTNET_INSTALL_DIR = "$pwd\.dotnetcli"
+  - ps: '& .\scripts\obtain\dotnet-install.ps1 -InstallDir "$env:DOTNET_INSTALL_DIR"'
+
+# Perform the build.
+build_script:
+  - msbuild SupportLibraries.proj
+  - .\testrunner\NUnit.ConsoleRunner.3.2.1\tools\nunit3-console.exe Src\Support\GoogleApis.Tests\bin\ReleaseSigned\Google.Apis.Tests.exe Src\Support\GoogleApis.Auth.Tests\bin\ReleaseSigned\Google.Apis.Auth.Tests.exe Src\Support\GoogleApis.Auth.DotNet4.Tests\bin\ReleaseSigned\Google.Apis.Auth.DotNet4.Tests.exe
+
+# The tests are run as part of the build.
+test: off
